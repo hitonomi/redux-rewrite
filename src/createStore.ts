@@ -1,9 +1,20 @@
-interface StoreConfiguration<TState extends Record<string, unknown>> {
-  initialState: TState;
+type CombinedReducer<TState extends Record<string, unknown>> = (
+  state: TState,
+  action: DispatchAction
+) => TState;
+
+interface DispatchAction {
+  type: string;
+  payload: unknown;
 }
 
-interface CreateStoreReturn<TState extends Record<string, unknown>> {
-  dispatch: () => void;
+export interface StoreConfiguration<TState extends Record<string, unknown>> {
+  initialState: TState;
+  reducer: CombinedReducer<TState>;
+}
+
+export interface CreateStoreReturn<TState extends Record<string, unknown>> {
+  dispatch: (action: DispatchAction) => void;
   getState: () => TState;
 }
 
@@ -12,18 +23,21 @@ interface CreateStoreReturn<TState extends Record<string, unknown>> {
  */
 export const createStore = <TState extends Record<string, unknown>>({
   initialState,
+  reducer,
 }: StoreConfiguration<TState>): CreateStoreReturn<TState> => {
-  const state = { ...initialState };
+  let state = { ...initialState };
 
   /**
-   * Gets the current state of the store and returns a copy of it.
+   * Gets the current state of the store and returns it.
    */
-  const getState = () => ({ ...state });
+  const getState = () => state;
 
-  return {
-    dispatch: () => {},
-    getState,
+  /**
+   * Calls the reducer with the given action and the current state of the store and updates the current state with the results.
+   */
+  const dispatch = (action: DispatchAction) => {
+    state = { ...reducer({ ...getState() }, action) };
   };
-};
 
-const store = createStore({ initialState: {} });
+  return { dispatch, getState };
+};
